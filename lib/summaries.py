@@ -55,9 +55,18 @@ class Summary(NamedTuple):
   logLines: list[LogLine]
   # lobbyName: tuple[str | None, str | None]
 
-def decode(b: bytes):
-  try: return b.decode()
-  except: return b.decode("iso-8859-1")
+def decode(b: bytes) -> str:
+    try:
+        return b.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    try:
+        s = b.decode("latin-1")
+        repaired = s.encode("latin-1").decode("utf-8")
+        return repaired
+    except UnicodeError:
+        pass
+    return b.decode("latin-1")
 
 def processReplay(replay: Replay):
   game = replay.setupScript['game']
