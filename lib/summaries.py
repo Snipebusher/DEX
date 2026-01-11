@@ -14,6 +14,8 @@ import json
 import os
 import html
 import math
+from charset_normalizer import from_bytes
+from ftfy import fix_text
 from typing import NamedTuple, Union, Literal
 from collections import defaultdict
 from .replays import Header, Replay, readReplay
@@ -55,18 +57,42 @@ class Summary(NamedTuple):
   logLines: list[LogLine]
   # lobbyName: tuple[str | None, str | None]
 
-def decode(b: bytes) -> str:
+def decode(b):
+    if isinstance(b, str): return b
+    if isinstance(b, (bytearray, memoryview)): b = bytes(b)
     try:
-        return b.decode("utf-8")
+        s = b.decode("utf-8")
+        return fix_text(s)
     except UnicodeDecodeError:
         pass
     try:
-        s = b.decode("latin-1")
-        repaired = s.encode("latin-1").decode("utf-8")
-        return repaired
-    except UnicodeError:
+        best = from_bytes(b).best()
+        if best:
+            s = fix_text(str(best))
+            if "\ufffd" not in s:
+                return s
+    except Exception:
+        s = None
+    try:
+        s2 = b.decode("utf-8", errors="replace")
+        s2 = fix_text(s2)
+        if s2 and any("\u4e00" <= ch <= "\u9fff" for ch in s2):
+            return s2
+    except Exception:
         pass
-    return b.decode("latin-1")
+    try:
+        s3 = b.decode("latin-1")
+        try:
+            s3 = s3.encode("latin-1").decode("utf-8")
+        except Exception:
+            pass
+        s3 = fix_text(s3)
+        if s3 and "\ufffd" not in s3:
+            return s3
+    except Exception:
+        pass
+    print("\ufffd")
+    return "\ufffd"
 
 def processReplay(replay: Replay):
   game = replay.setupScript['game']
