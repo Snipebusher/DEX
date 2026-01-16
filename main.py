@@ -1,5 +1,27 @@
 #!/usr/bin/env python3
 
+import sys
+import importlib
+import subprocess
+
+REQUIRED = ["charset_normalizer", "ftfy"]
+
+def _install(pkg):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", pkg])
+for pkg in REQUIRED:
+    try:
+        importlib.import_module(pkg)
+    except ImportError:
+        print(f"You are missing {pkg} - installing/upgrading via pip:")
+        try:
+            _install(pkg)
+            importlib.invalidate_caches()
+            importlib.import_module(pkg)
+            print(f"Successfully installed {pkg}")
+        except Exception as e:
+            print(f"Failed to install {pkg}: {e}")
+            sys.exit(1)
+
 import webbrowser
 import pathlib
 import argparse
@@ -11,7 +33,6 @@ from lib import server
 import tkinter as tk
 from tkinter import filedialog
 import os
-import subprocess
 
 def run_file_dialog():
     root = tk.Tk()
@@ -37,7 +58,7 @@ parser.add_argument("DIR", nargs='?',
                     default=server.defaultPath,
                     help="default local directory or replay file to open")
 parser.add_argument("-p", "--port", 
-                    type=int, default=8888,
+                    type=int, default=4520,
                     help="port to listen to")
 parser.add_argument("-b", "--bind",
                     default="localhost",
@@ -54,8 +75,8 @@ if __name__ == "__main__":
     server.defaultPath = selected_file
   
   # webbrowser.register('browser', None, webbrowser.BackgroundBrowser("S:\\Apps\\Opera GX\\Opera GX\\opera.exe"))
-  # webbrowser.get('browser').open("http://localhost:8888")
-  webbrowser.open("http://localhost:8888")
+  # webbrowser.get('browser').open("http://localhost:4520")
+  webbrowser.open("http://localhost:4520")
 
   httpd = http.server.HTTPServer(server_address, server.RequestHandler)
   thread = threading.Thread(target=httpd.serve_forever, daemon=True)
